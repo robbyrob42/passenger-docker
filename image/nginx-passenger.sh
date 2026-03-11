@@ -9,7 +9,7 @@ header "Installing Phusion Passenger..."
 ## Install it through RVM, not APT, so that the -customizable variant cannot end up
 ## having Ruby installed from both APT and RVM.
 if [[ ! -e /usr/bin/ruby ]]; then
-	RVM_ID="ruby-3.3.4"
+	RVM_ID="ruby-4.0.1"
 
 	run mkdir -p "/build_cache/${ARCH}"
 	if [[ -e "/build_cache/${ARCH}/${RVM_ID}.tar.bz2" ]]; then
@@ -52,13 +52,21 @@ run cp /pd_build/runit/nginx-log-forwarder /etc/service/nginx-log-forwarder/run
 run mkdir -p /etc/service/nginx/control/
 run cp /pd_build/runit/nginx-term /etc/service/nginx/control/t
 
-run mkdir /var/run/passenger-instreg
+run mkdir -p /var/run/passenger-instreg
 
 run sed -i 's|invoke-rc.d nginx rotate|sv 1 nginx|' /etc/logrotate.d/nginx
 run sed -i -e '/sv 1 nginx.*/a\' -e '		passenger-config reopen-logs >/dev/null 2>&1' /etc/logrotate.d/nginx
 run rm -f /var/log/nginx/error.log
 
 ## Precompile Ruby extensions.
+if [[ -e /usr/bin/ruby4.0 ]]; then
+	run ruby4.0 -S passenger-config build-native-support
+	run setuser app ruby4.0 -S passenger-config build-native-support
+fi
+if [[ -e /usr/bin/ruby3.4 ]]; then
+	run ruby3.4 -S passenger-config build-native-support
+	run setuser app ruby3.4 -S passenger-config build-native-support
+fi
 if [[ -e /usr/bin/ruby3.3 ]]; then
 	run ruby3.3 -S passenger-config build-native-support
 	run setuser app ruby3.3 -S passenger-config build-native-support
@@ -67,15 +75,11 @@ if [[ -e /usr/bin/ruby3.2 ]]; then
 	run ruby3.2 -S passenger-config build-native-support
 	run setuser app ruby3.2 -S passenger-config build-native-support
 fi
-if [[ -e /usr/bin/ruby3.1 ]]; then
-	run ruby3.1 -S passenger-config build-native-support
-	run setuser app ruby3.1 -S passenger-config build-native-support
+if [[ -e /usr/bin/jruby10.0 ]]; then
+	run jruby10.0 --dev -S passenger-config build-native-support
+	run setuser app jruby10.0 -S passenger-config build-native-support
 fi
 if [[ -e /usr/bin/jruby9.4 ]]; then
 	run jruby9.4 --dev -S passenger-config build-native-support
 	run setuser app jruby9.4 -S passenger-config build-native-support
-fi
-if [[ -e /usr/bin/jruby9.3 ]]; then
-	run jruby9.3 --dev -S passenger-config build-native-support
-	run setuser app jruby9.3 -S passenger-config build-native-support
 fi

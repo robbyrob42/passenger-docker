@@ -7,7 +7,7 @@ REGISTRY = docker.io
 endif
 
 NAME ?= $(REGISTRY)/phusion/passenger
-VERSION ?= 3.0.8
+VERSION ?= 3.1.6
 
 # NAME and/or VERSION can be overriden during build if you are building locally to push to your own repository
 # example:
@@ -35,15 +35,18 @@ else
 _build_arm64 := 1
 endif
 
-.PHONY: all build_base build_all tag_latest cross_tag push release labels clean clean_images
+# test if we're running in an interactive shell (vs gh actions)
+INTERACTIVE:=$(shell [ -t 0 ] && echo 1)
+
+.PHONY: all build_base build_all tag_latest push release labels clean clean_images
 
 FORCE:
 
-# when adding a cRuby image, also update image/nginx-passenger.sh and image/ruby-support/finalize.sh
+# when adding a cRuby image, also update image/nginx-passenger.sh and image/ruby_support/finalize.sh
 SPECIAL_IMAGES := customizable full
-CRUBY_IMAGES := ruby31 ruby32 ruby33
-PYTHON_IMAGES := python38 python39 python310 python311 python312
-MISC_IMAGES := jruby93 jruby94 nodejs
+CRUBY_IMAGES := ruby32 ruby33 ruby34 ruby40
+PYTHON_IMAGES := python310 python311 python312 python313 python314
+MISC_IMAGES := jruby94 jruby100 nodejs
 
 ALL_IMAGES := $(SPECIAL_IMAGES) $(MISC_IMAGES) $(CRUBY_IMAGES) $(PYTHON_IMAGES)
 
@@ -64,16 +67,27 @@ build_base:
 	rm -rf base_image
 	cp -pR image base_image
 ifeq ($(_build_amd64),1)
-	docker rmi $(NAME)-base:current-amd64 || true
-	docker buildx build --progress=plain --platform linux/amd64 $(EXTRA_BUILD_FLAGS) --build-arg ARCH=amd64 -t $(REGISTRY)/phusion/passenger-base:current-amd64 -f image/Dockerfile.base base_image --no-cache
+	docker rmi $(NAME)-base:latest-amd64 || true
+	docker buildx build --progress=plain --platform linux/amd64 $(EXTRA_BUILD_FLAGS) --build-arg ARCH=amd64 -t $(NAME)-base:latest-amd64 -f image/Dockerfile.base base_image --no-cache --load
 endif
 ifeq ($(_build_arm64),1)
-	docker rmi $(NAME)-base:current-arm64 || true
-	docker buildx build --progress=plain --platform linux/arm64 $(EXTRA_BUILD_FLAGS) --build-arg ARCH=arm64 -t $(REGISTRY)/phusion/passenger-base:current-arm64 -f image/Dockerfile.base base_image --no-cache
+	docker rmi $(NAME)-base:latest-arm64 || true
+	docker buildx build --progress=plain --platform linux/arm64 $(EXTRA_BUILD_FLAGS) --build-arg ARCH=arm64 -t $(NAME)-base:latest-arm64 -f image/Dockerfile.base base_image --no-cache --load
 endif
 	rm -rf base_image
 
+export_base:
+ifeq ($(_build_amd64),1)
+	docker save $(NAME)-base:latest-amd64 | gzip > passenger-base-amd64.tar.gz
+endif
+ifeq ($(_build_arm64),1)
+	docker save $(NAME)-base:latest-arm64 | gzip > passenger-base-arm64.tar.gz
+endif
+
+build_%:
+ifeq ($(INTERACTIVE),1)
 build_%: build_base
+endif
 	rm -rf $*_image
 	cp -pR image $*_image
 	@if [ "${*}" != "full" ] && [ "${*}" != "customizable" ]; then \
@@ -82,7 +96,7 @@ build_%: build_base
 	@if [ "${*}" == "full" ]; then \
 	    for i in ${CRUBY_IMAGES}; do echo "$${i}=1" >> ${*}_image/buildconfig; done; \
 	    for i in ${MISC_IMAGES}; do echo "$${i}=1" >> ${*}_image/buildconfig; done; \
-	    echo python310=1 >> ${*}_image/buildconfig; \
+	    echo python312=1 >> ${*}_image/buildconfig; \
 	    echo redis=1 >> ${*}_image/buildconfig; \
 	    echo memcached=1 >> ${*}_image/buildconfig; \
 	fi
@@ -90,10 +104,10 @@ build_%: build_base
 	    echo final=1 >> ${*}_image/buildconfig; \
 	fi
 ifeq ($(_build_amd64),1)
-	docker buildx build --progress=plain --platform linux/amd64 $(EXTRA_BUILD_FLAGS) --build-arg REGISTRY=$(REGISTRY) --build-arg ARCH=amd64 -t $(NAME)-$*:$(VERSION)-amd64 --rm $*_image
+	docker buildx build --progress=plain --platform linux/amd64 $(EXTRA_BUILD_FLAGS) --build-arg NAME=$(NAME) --build-arg ARCH=amd64 -t $(NAME)-$*:$(VERSION)-amd64 --rm $*_image --load
 endif
 ifeq ($(_build_arm64),1)
-	docker buildx build --progress=plain --platform linux/arm64 $(EXTRA_BUILD_FLAGS) --build-arg REGISTRY=$(REGISTRY) --build-arg ARCH=arm64 -t $(NAME)-$*:$(VERSION)-arm64 --rm $*_image
+	docker buildx build --progress=plain --platform linux/arm64 $(EXTRA_BUILD_FLAGS) --build-arg NAME=$(NAME) --build-arg ARCH=arm64 -t $(NAME)-$*:$(VERSION)-arm64 --rm $*_image --load
 endif
 
 labels: $(foreach image, $(ALL_IMAGES), label_${image})
@@ -110,20 +124,12 @@ pull: $(foreach image, $(ALL_IMAGES), pull_${image})
 
 pull_%: FORCE
 ifeq ($(_build_amd64),1)
-	docker pull $(NAME)-$*:$(VERSION)-amd64
+	docker pull --platform linux/amd64 ghcr.io/phusion/passenger-$*:$(VERSION)-amd64
+	docker tag  ghcr.io/phusion/passenger-$*:$(VERSION)-amd64 $(NAME)-$*:$(VERSION)-amd64
 endif
 ifeq ($(_build_arm64),1)
-	docker pull $(NAME)-$*:$(VERSION)-arm64
-endif
-
-cross_tag: $(foreach image, $(ALL_IMAGES), cross_tag_${image})
-
-cross_tag_%: FORCE
-ifeq ($(_build_amd64),1)
-	docker tag ghcr.io/phusion/passenger-$*:$(VERSION)-amd64 $(NAME)-$*:$(VERSION)-amd64
-endif
-ifeq ($(_build_arm64),1)
-	docker tag ghcr.io/phusion/passenger-$*:$(VERSION)-arm64 $(NAME)-$*:$(VERSION)-arm64
+	docker pull --platform linux/arm64 ghcr.io/phusion/passenger-$*:$(VERSION)-arm64
+	docker tag  ghcr.io/phusion/passenger-$*:$(VERSION)-arm64 $(NAME)-$*:$(VERSION)-arm64
 endif
 
 tag_latest: $(foreach image, $(ALL_IMAGES), tag_latest_${image})
@@ -136,34 +142,44 @@ ifeq ($(_build_arm64),1)
 	docker tag $(NAME)-$*:$(VERSION)-arm64 $(NAME)-$*:latest-arm64
 endif
 
-push: $(foreach image, $(ALL_IMAGES), push_${image})
+check: $(foreach image, $(ALL_IMAGES), check_${image})
 
-push_%: tag_latest_%
+check_%: FORCE
 ifeq ($(_build_amd64),1)
-	docker push $(NAME)-$*:latest-amd64
-	docker push $(NAME)-$*:$(VERSION)-amd64
+	@ ! DOCKER_CLI_EXPERIMENTAL=enabled docker manifest inspect $(NAME)-$*:$(VERSION)-amd64 >/dev/null 2>/dev/null
 endif
 ifeq ($(_build_arm64),1)
-	docker push $(NAME)-$*:latest-arm64
-	docker push $(NAME)-$*:$(VERSION)-arm64
+	@ ! DOCKER_CLI_EXPERIMENTAL=enabled docker manifest inspect $(NAME)-$*:$(VERSION)-arm64 >/dev/null 2>/dev/null
+endif
+
+push: $(foreach image, $(ALL_IMAGES), push_${image})
+
+push_%: FORCE
+ifeq ($(REGISTRY),docker.io)
+push_%: check_%
+endif
+ifeq ($(_build_amd64),1)
+	docker push --platform linux/amd64 $(NAME)-$*:latest-amd64
+	if [ base != $* ]; then docker push $(NAME)-$*:$(VERSION)-amd64; fi
+endif
+ifeq ($(_build_arm64),1)
+	docker push --platform linux/arm64 $(NAME)-$*:latest-arm64
+	if [ base != $* ]; then docker push $(NAME)-$*:$(VERSION)-arm64; fi
 endif
 
 release: $(foreach image, $(ALL_IMAGES), release_${image})
 	test -z "$$(git status --porcelain)" || git commit -am "$(VERSION)" && git tag "rel-$(VERSION)" && git push origin "rel-$(VERSION)"
 
-release_%: push_%
-	docker manifest rm $(NAME)-$*:latest || true
-	docker manifest create $(NAME)-$*:$(VERSION) $(NAME)-$*:$(VERSION)-amd64 $(NAME)-$*:$(VERSION)-arm64
-	docker manifest create $(NAME)-$*:latest     $(NAME)-$*:latest-amd64     $(NAME)-$*:latest-arm64
-	docker manifest push $(NAME)-$*:$(VERSION)
-	docker manifest push $(NAME)-$*:latest
+release_%:
+	docker buildx imagetools create --tag $(NAME)-$*:$(VERSION) $(NAME)-$*:$(VERSION)-amd64 $(NAME)-$*:$(VERSION)-arm64
+	docker buildx imagetools create --tag $(NAME)-$*:latest     $(NAME)-$*:latest-amd64     $(NAME)-$*:latest-arm64
 
 clean:
 	rm -rf *_image
 
 clean_images: $(foreach image, $(ALL_IMAGES), clean_image_${image}) FORCE
-	docker rmi $(REGISTRY)/phusion/passenger-base:current-amd64 phusion/passenger-base:current-amd64 || true
-	docker rmi $(REGISTRY)/phusion/passenger-base:current-arm64 phusion/passenger-base:current-arm64 || true
+	docker rmi $(NAME)-base:latest-amd64 phusion/passenger-base:latest-amd64 || true
+	docker rmi $(NAME)-base:latest-arm64 phusion/passenger-base:latest-arm64 || true
 
 clean_image_%: FORCE
 	docker rmi $(NAME)-$*:latest-amd64 $(NAME)-$*:$(VERSION)-amd64 || true

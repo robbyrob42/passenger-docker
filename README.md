@@ -85,7 +85,7 @@ Why use passenger-docker instead of doing everything yourself in Dockerfile?
 
 Basics (learn more at [baseimage-docker](http://phusion.github.io/baseimage-docker/)):
 
- * Ubuntu 22.04 LTS as base system.
+ * Ubuntu 24.04 LTS as base system.
  * A **correct** init process ([learn more](http://blog.phusion.nl/2015/01/20/docker-and-the-pid-1-zombie-reaping-problem/)).
  * Fixes APT incompatibilities with Docker.
  * syslog-ng.
@@ -94,18 +94,17 @@ Basics (learn more at [baseimage-docker](http://phusion.github.io/baseimage-dock
 
 Language support:
 
- * Ruby 3.1.6, 3.2.5, 3.3.4 and JRuby 9.3.15.0 and 9.4.8.0.
+ * Ruby 3.2.10, 3.3.10, 3.4.8, 4.0.1 and JRuby 10.0.2.0 and 9.4.14.0.
    * RVM is used to manage Ruby versions. [Why RVM?](#why_rvm)
-   * 3.3.4 is configured as the default.
-   * JRuby is installed from source, but we register an APT entry for it.
-   * JRuby uses OpenJDK 17.
- * Python 2.7 or 3.10, or any version provided by the Deadsnakes PPA (currently 3.7, 3.8, 3.9, 3.11, and 3.12; see https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa).
- * Node.js 18 by default, or any version provided by Nodesource (currently 16, 18, 20, 21; see https://github.com/nodesource/distributions).
+   * 4.0.1 is configured as the default.
+   * JRuby uses OpenJDK 17 (9.4) or 21 (10.0).
+ * Python 3.12, or any version provided by the Deadsnakes PPA (currently 3.10, 3.11, 3.12, 3.13, 3,14; see https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa).
+ * Node.js 22 by default, or any version provided by Nodesource (currently 20, 22, 24; see https://github.com/nodesource/distributions).
  * A build system, git, and development headers for many popular libraries, so that the most popular Ruby, Python and Node.js native extensions can be compiled without problems.
 
 Web server and application server:
 
- * Nginx 1.18. Disabled by default.
+ * Nginx 1.24. Disabled by default.
  * [Phusion Passenger 6](https://www.phusionpassenger.com/). Disabled by default (because it starts along with Nginx).
    * This is a fast and lightweight tool for simplifying web application integration into Nginx.
    * It adds many production-grade features, such as process monitoring, administration and status inspection.
@@ -114,7 +113,7 @@ Web server and application server:
 
 Auxiliary services and tools:
 
- * Redis 6.0. Not installed by default.
+ * Redis 7.0. Not installed by default.
  * Memcached. Not installed by default.
 
 <a name="memory_efficiency"></a>
@@ -129,23 +128,24 @@ Passenger-docker consists of several images, each one tailor made for a specific
 
 **Ruby images**
 
- * `phusion/passenger-ruby31` - Ruby 3.1.
  * `phusion/passenger-ruby32` - Ruby 3.2.
  * `phusion/passenger-ruby33` - Ruby 3.3.
- * `phusion/passenger-jruby93` - JRuby 9.3.
+ * `phusion/passenger-ruby34` - Ruby 3.4.
+ * `phusion/passenger-ruby40` - Ruby 4.0.
  * `phusion/passenger-jruby94` - JRuby 9.4.
+ * `phusion/passenger-jruby100` - JRuby 10.0.
 
 Python images
 
- * `phusion/passenger-python38` - Python 3.8
- * `phusion/passenger-python39` - Python 3.9
  * `phusion/passenger-python310` - Python 3.10
  * `phusion/passenger-python311` - Python 3.11
  * `phusion/passenger-python312` - Python 3.12
+ * `phusion/passenger-python313` - Python 3.13
+ * `phusion/passenger-python314` - Python 3.14
 
 **Node.js and Meteor images**
 
- * `phusion/passenger-nodejs` - Node.js 18.
+ * `phusion/passenger-nodejs` - Node.js 22.
 
 **Other images**
 
@@ -180,16 +180,17 @@ So put the following in your Dockerfile:
 # a list of version numbers.
 FROM phusion/passenger-full:<VERSION>
 # Or, instead of the 'full' variant, use one of these:
-#FROM phusion/passenger-ruby31:<VERSION>
 #FROM phusion/passenger-ruby32:<VERSION>
 #FROM phusion/passenger-ruby33:<VERSION>
-#FROM phusion/passenger-python38:<VERSION>
-#FROM phusion/passenger-python39:<VERSION>
+#FROM phusion/passenger-ruby34:<VERSION>
+#FROM phusion/passenger-ruby40:<VERSION>
 #FROM phusion/passenger-python310:<VERSION>
 #FROM phusion/passenger-python311:<VERSION>
 #FROM phusion/passenger-python312:<VERSION>
-#FROM phusion/passenger-jruby93:<VERSION>
+#FROM phusion/passenger-python313:<VERSION>
+#FROM phusion/passenger-python314:<VERSION>
 #FROM phusion/passenger-jruby94:<VERSION>
+#FROM phusion/passenger-jruby100:<VERSION>
 #FROM phusion/passenger-nodejs:<VERSION>
 #FROM phusion/passenger-customizable:<VERSION>
 
@@ -209,17 +210,18 @@ CMD ["/sbin/my_init"]
 # Uncomment the features you want:
 #
 #   Node.js and Meteor standalone support (not needed if you will also be installing Ruby, unless you need a version other than the default)
-#RUN /pd_build/nodejs.sh 18
+#RUN /pd_build/nodejs.sh 22
 #
 #   Ruby support
-#RUN /pd_build/ruby-3.1.*.sh
 #RUN /pd_build/ruby-3.2.*.sh
 #RUN /pd_build/ruby-3.3.*.sh
-#RUN /pd_build/jruby-9.3.*.sh
+#RUN /pd_build/ruby-3.4.*.sh
+#RUN /pd_build/ruby-4.0.*.sh
 #RUN /pd_build/jruby-9.4.*.sh
+#RUN /pd_build/jruby-10.0.*.sh
 #
 #   Python support
-#RUN /pd_build/python.sh 3.10
+#RUN /pd_build/python.sh 3.12
 
 # ...put your own build instructions here...
 
@@ -271,16 +273,18 @@ server {
     passenger_user app;
 
     # If this is a Ruby app, specify a Ruby version:
+    # For Ruby 4.0
+    passenger_ruby /usr/bin/ruby4.0;
+    # For Ruby 3.4
+    passenger_ruby /usr/bin/ruby3.4;
     # For Ruby 3.3
     passenger_ruby /usr/bin/ruby3.3;
     # For Ruby 3.2
     passenger_ruby /usr/bin/ruby3.2;
-    # For Ruby 3.1
-    passenger_ruby /usr/bin/ruby3.1;
 
     # For Python ie. Django
     passenger_app_type wsgi;
-    passenger_startup_file passenger_wsgi.py; (contents example: https://gist.github.com/ajhodgson/96c51dba349697e5c7e46027cc530434)
+    passenger_startup_file passenger_wsgi.py; # (contents example: https://gist.github.com/ajhodgson/96c51dba349697e5c7e46027cc530434)
 
     # For Node.js
     passenger_app_type node;
@@ -447,16 +451,18 @@ We use [RVM](https://rvm.io/) to install and to manage Ruby interpreters. Becaus
 The default Ruby (what the `/usr/bin/ruby` command executes) is the latest Ruby version that you've chosen to install. You can use RVM select a different version as default.
 
 ```dockerfile
-# Ruby 3.1.6
-RUN bash -lc 'rvm --default use ruby-3.1.6'
-# Ruby 3.2.5
-RUN bash -lc 'rvm --default use ruby-3.2.5'
-# Ruby 3.3.4
-RUN bash -lc 'rvm --default use ruby-3.3.4'
-# JRuby 9.3.15.0
-RUN bash -lc 'rvm --default use jruby-9.3.15.0'
-# JRuby 9.4.8.0
-RUN bash -lc 'rvm --default use jruby-9.4.8.0'
+# Ruby 3.2.10
+RUN bash -lc 'rvm --default use ruby-3.2.10'
+# Ruby 3.3.10
+RUN bash -lc 'rvm --default use ruby-3.3.10'
+# Ruby 3.4.8
+RUN bash -lc 'rvm --default use ruby-3.4.8'
+# Ruby 4.0.1
+RUN bash -lc 'rvm --default use ruby-4.0.1'
+# JRuby 9.4.9.0
+RUN bash -lc 'rvm --default use jruby-9.4.9.0'
+# JRuby 10.0.0.0
+RUN bash -lc 'rvm --default use jruby-10.0.0.0'
 ```
 
 Learn more: [RVM: Setting the default Ruby](https://rvm.io/rubies/default).
@@ -467,20 +473,20 @@ Learn more: [RVM: Setting the default Ruby](https://rvm.io/rubies/default).
 You can run any command with a specific Ruby version by prefixing it with `rvm-exec <IDENTIFIER>`. For example:
 
 ```bash
-$ rvm-exec 3.1.6 ruby -v
-Using /usr/local/rvm/gems/ruby-3.1.6
-ruby 3.1.6p260 (2024-05-29 revision a777087be6) [x86_64-linux]
+$ rvm-exec 3.3.10 ruby -v
+Using /usr/local/rvm/gems/ruby-3.3.10
+ruby 3.3.10 (2025-10-23 revision 343ea05002) [x86_64-linux]
 
-$ rvm-exec 3.3.4 ruby -v
-Using /usr/local/rvm/gems/ruby-3.3.4
-ruby 3.3.4 (2024-07-09 revision be1089c8ec) [x86_64-linux]
+$ rvm-exec 3.4.8 ruby -v
+Using /usr/local/rvm/gems/ruby-3.4.8
+ruby 3.4.8 (2025-12-17 revision 995b59f666) +PRISM [x86_64-linux]
 ```
 
 More examples, but with Bundler instead:
 
 ```bash
-# This runs 'bundle install' using Ruby 3.3.4
-rvm-exec 3.3.4 bundle install
+# This runs 'bundle install' using Ruby 3.4.8
+rvm-exec 3.4.8 bundle install
 ```
 
 <a name="default_ruby_wrapper_scripts"></a>
@@ -520,7 +526,7 @@ The following example shows how you can add a startup script. This script simply
 <a name="upgrading_os"></a>
 ### Upgrading the operating system inside the container
 
-passenger-docker images contain an Ubuntu 22.04 operating system. You may want to update this OS from time to time, for example to pull in the latest security updates. OpenSSL is a notorious example. Vulnerabilities are discovered in OpenSSL on a regular basis, so you should keep OpenSSL up-to-date as much as you can.
+passenger-docker images contain an Ubuntu 24.04 operating system. You may want to update this OS from time to time, for example to pull in the latest security updates. OpenSSL is a notorious example. Vulnerabilities are discovered in OpenSSL on a regular basis, so you should keep OpenSSL up-to-date as much as you can.
 
 While we release passenger-docker images with the latest OS updates from time to time, you do not have to rely on us. You can update the OS inside passenger-docker images yourself, and it is recommend that you do this instead of waiting for us. This is also especially important to upgrade any installed Python or Node packages to the latest minor version.
 
@@ -825,42 +831,37 @@ RUN apt-get update && apt-get install -y -o Dpkg::Options::="--force-confold" li
 <a name="building"></a>
 ## Building the image yourself
 
-If for whatever reason you want to build the image yourself instead of downloading it from the Docker registry, follow these instructions.
+If you want to build the image yourself instead of downloading it from the Docker registry, follow these instructions.
 
 Clone this repository:
 
     git clone https://github.com/phusion/passenger-docker.git
     cd passenger-docker
 
-Start a virtual machine with Docker in it. You can use the Vagrantfile that we've already provided.
-
-    vagrant up
-    vagrant ssh
-    cd /vagrant
-
 Build one of the images:
 
-    make build_ruby31
     make build_ruby32
     make build_ruby33
-    make build_python38
-    make build_python39
+    make build_ruby34
+    make build_ruby40
     make build_python310
     make build_python311
     make build_python312
-    make build_jruby93
+    make build_python313
+    make build_python314
     make build_jruby94
+    make build_jruby100
     make build_nodejs
     make build_customizable
     make build_full
 
 If you want to call the resulting image something else, pass the NAME variable, like this:
 
-    NAME=joe/passenger make build_ruby32
+     make NAME=joe/passenger build_ruby32
 
 Make will build images for both AMD64 and ARM64 by default. If you only want to build for one CPU architecture (ie. AMD64), disable the other architecture like this:
 
-    BUILD_ARM64=0 make build_ruby32
+     make BUILD_ARM64=0 build_ruby32
 
 <a name="faq"></a>
 ## FAQ

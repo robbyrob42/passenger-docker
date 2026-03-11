@@ -1,4 +1,62 @@
-## 3.0.8 (release date: TBD)
+## 3.1.6 (not yet released)
+ * Added a Ruby 4.0 image (Ruby 4.0.1)
+ * Upgraded to Ruby 3.2.10 (from 3.2.9)
+ * Upgraded to Phusion Passenger 6.1.2 (was 6.1.1)
+
+## 3.1.5 (release date: 2025-12-23)
+ * Upgraded to Phusion Passenger 6.1.1 (was 6.1.0)
+ * Dropped Python 3.9 image (EOL: 2025-10)
+ * Added a Python 3.14 image
+ * Upgraded to Ruby 3.4.8 (from 3.4.6)
+ * Upgraded to Ruby 3.3.10 (from 3.3.9)
+ * Upgraded to JRuby 9.4.14 (from 9.4.12)
+ * Upgraded to JRuby 10.0.2 (from 10.0.0)
+
+## 3.1.4 (release date: 2025-09-25)
+ * Upgraded to Phusion Passenger 6.1.0 (was 6.0.27)
+ * Removed JRuby 9.3 (EOL: 2023-12-31)
+ * Removed Ruby 3.1 (EOL: 2024-03-26)
+ * Added a JRuby 10.0.0.0 image
+ * Upgraded Node 20 LTS -> 22 LTS
+ * Updated baseimage to noble-1.0.2
+ * Upgraded image base to phusion/baseimage:noble-1.0.1
+ * Upgraded to Ruby 3.2.9 (from 3.2.8)
+ * Upgraded to Ruby 3.3.9 (from 3.3.7)
+ * Upgraded to Ruby 3.4.6 (from 3.4.2)
+
+## 3.1.3 (release date: 2025-04-04)
+ * Upgraded to Ruby 3.1.7 (from 3.1.6).
+ * Upgraded to Ruby 3.2.8 (from 3.2.7).
+ * Upgraded to Phusion Passenger 6.0.27 (from 6.0.26).
+
+## 3.1.2 (release date: 2025-02-19)
+ * Upgraded to Ruby 3.4.2 (from 3.4.1).
+ * Upgraded to Phusion Passenger 6.0.26 (from 6.0.25).
+
+## 3.1.1 (release date: 2025-02-12)
+ * Added a Ruby 3.4 image (Ruby 3.4.1)
+ * Default Ruby version is now 3.4.1
+ * Upgraded to JRuby 9.4.9.0 (from 9.4.8.0).
+ * Upgraded to Ruby 3.3.7 (from 3.3.6).
+ * Upgraded to Ruby 3.2.7 (from 3.2.6).
+ * Upgraded to Phusion Passenger 6.0.25 (from 6.0.24).
+
+## 3.1.0 (release date: 2024-12-09)
+ * Upgraded image base to phusion/baseimage:noble-1.0.0
+   * Upgraded to Ubuntu 24.04 LTS (Noble)
+       - note updated compiler chain and all tools; please test your apps thoroughly
+   * Default Python version is now 3.12 (from 3.10)
+   * Python 2.7 and 3.7 are no longer available from the Deadsnakes PPA; we weren't providing images for either previously
+   * Nginx version is now 1.24 (from 1.18)
+       - changelog can be found at https://nginx.org/en/CHANGES-1.24
+       - if you provide your own nginx.conf, please define error_log at the root scope, not the http scope; see https://github.com/phusion/passenger/issues/2541
+       - a number of modules are no longer installed and enabled by default (mod-http-geoip2, mod-http-image-filter, mod-http-xslt-filter, mod-mail, mod-stream, mod-stream-geoip2)
+    * Redis version is now 7.0.15 (from 6.0.16)
+ * Added a Python 3.13 image
+ * Dropped Python 3.8 image
+ * Upgraded to Ruby 3.2.6
+ * Upgraded to Ruby 3.3.6
+ * Upgraded to Phusion Passenger 6.0.24 (from 6.0.23).
 
 ## 3.0.7 (release date: 2024-07-30)
  * Upgraded to Ruby 3.3.4
@@ -257,7 +315,7 @@
  * Upgraded to Phusion Passenger 5.2.1 (from 5.2.0).
  * Hints about app permission in container. Thanks to contribution by skunkworker (PR 206)
  * Thanks to contribution by ledermann (PR 204):
-   - Added build for Ruby 2.5 (2.5.0). 
+   - Added build for Ruby 2.5 (2.5.0).
    - Upgraded to Ruby 2.4.3 (from 2.4.2).
    - Upgraded to Ruby 2.3.6 (from 2.3.5).
    - Upgraded to Ruby 2.2.9 (from 2.2.8).
