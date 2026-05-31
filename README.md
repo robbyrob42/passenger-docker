@@ -94,12 +94,12 @@ Basics (learn more at [baseimage-docker](http://phusion.github.io/baseimage-dock
 
 Language support:
 
- * Ruby 3.2.10, 3.3.10, 3.4.8, 4.0.1 and JRuby 10.0.2.0 and 9.4.14.0.
+ * Ruby 3.3.11, 3.4.9, 4.0.4 and JRuby 10.0.2.0 and 9.4.14.0.
    * RVM is used to manage Ruby versions. [Why RVM?](#why_rvm)
-   * 4.0.1 is configured as the default.
+   * 4.0.4 is configured as the default.
    * JRuby uses OpenJDK 17 (9.4) or 21 (10.0).
  * Python 3.12, or any version provided by the Deadsnakes PPA (currently 3.10, 3.11, 3.12, 3.13, 3,14; see https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa).
- * Node.js 22 by default, or any version provided by Nodesource (currently 20, 22, 24; see https://github.com/nodesource/distributions).
+ * Node.js 24 by default, or any version provided by Nodesource (currently 20, 22, 24; see https://github.com/nodesource/distributions).
  * A build system, git, and development headers for many popular libraries, so that the most popular Ruby, Python and Node.js native extensions can be compiled without problems.
 
 Web server and application server:
@@ -128,7 +128,6 @@ Passenger-docker consists of several images, each one tailor made for a specific
 
 **Ruby images**
 
- * `phusion/passenger-ruby32` - Ruby 3.2.
  * `phusion/passenger-ruby33` - Ruby 3.3.
  * `phusion/passenger-ruby34` - Ruby 3.4.
  * `phusion/passenger-ruby40` - Ruby 4.0.
@@ -145,12 +144,12 @@ Python images
 
 **Node.js and Meteor images**
 
- * `phusion/passenger-nodejs` - Node.js 22.
+ * `phusion/passenger-nodejs` - Node.js 24.
 
 **Other images**
 
  * `phusion/passenger-full` - Contains everything in the above images. Ruby, Python, Node.js, all in a single image for your convenience.
- * `phusion/passenger-customizable` - Contains only the base system, as described in ["What's included?"](#whats_included). Specific Ruby, Python, and Node.js versions are not preinstalled beyond what is needed for the image to run, or which are inherited from the baseimage. This image is meant to be further customized through your Dockerfile. For example, using this image you can create a custom image that contains Ruby 3.2 and Node.js.
+ * `phusion/passenger-customizable` - Contains only the base system, as described in ["What's included?"](#whats_included). Specific Ruby, Python, and Node.js versions are not preinstalled beyond what is needed for the image to run, or which are inherited from the baseimage. This image is meant to be further customized through your Dockerfile. For example, using this image you can create a custom image that contains Ruby 3.4 and Node.js.
 
 In the rest of this document we're going to assume that the reader will be using `phusion/passenger-full`, unless otherwise stated. Simply substitute the name if you wish to use another image.
 
@@ -169,7 +168,7 @@ You don't have to download anything manually. The above command will automatical
 <a name="getting_started"></a>
 ### Getting started
 
-There are several images, e.g. `phusion/passenger-ruby32` and `phusion/passenger-nodejs`. Choose the one you want. See [Image variants](#image_variants).
+There are several images, e.g. `phusion/passenger-ruby34` and `phusion/passenger-nodejs`. Choose the one you want. See [Image variants](#image_variants).
 
 So put the following in your Dockerfile:
 
@@ -180,7 +179,6 @@ So put the following in your Dockerfile:
 # a list of version numbers.
 FROM phusion/passenger-full:<VERSION>
 # Or, instead of the 'full' variant, use one of these:
-#FROM phusion/passenger-ruby32:<VERSION>
 #FROM phusion/passenger-ruby33:<VERSION>
 #FROM phusion/passenger-ruby34:<VERSION>
 #FROM phusion/passenger-ruby40:<VERSION>
@@ -210,10 +208,9 @@ CMD ["/sbin/my_init"]
 # Uncomment the features you want:
 #
 #   Node.js and Meteor standalone support (not needed if you will also be installing Ruby, unless you need a version other than the default)
-#RUN /pd_build/nodejs.sh 22
+#RUN /pd_build/nodejs.sh 24
 #
 #   Ruby support
-#RUN /pd_build/ruby-3.2.*.sh
 #RUN /pd_build/ruby-3.3.*.sh
 #RUN /pd_build/ruby-3.4.*.sh
 #RUN /pd_build/ruby-4.0.*.sh
@@ -279,8 +276,6 @@ server {
     passenger_ruby /usr/bin/ruby3.4;
     # For Ruby 3.3
     passenger_ruby /usr/bin/ruby3.3;
-    # For Ruby 3.2
-    passenger_ruby /usr/bin/ruby3.2;
 
     # For Python ie. Django
     passenger_app_type wsgi;
@@ -451,14 +446,12 @@ We use [RVM](https://rvm.io/) to install and to manage Ruby interpreters. Becaus
 The default Ruby (what the `/usr/bin/ruby` command executes) is the latest Ruby version that you've chosen to install. You can use RVM select a different version as default.
 
 ```dockerfile
-# Ruby 3.2.10
-RUN bash -lc 'rvm --default use ruby-3.2.10'
-# Ruby 3.3.10
-RUN bash -lc 'rvm --default use ruby-3.3.10'
-# Ruby 3.4.8
-RUN bash -lc 'rvm --default use ruby-3.4.8'
-# Ruby 4.0.1
-RUN bash -lc 'rvm --default use ruby-4.0.1'
+# Ruby 3.3.11
+RUN bash -lc 'rvm --default use ruby-3.3.11'
+# Ruby 3.4.9
+RUN bash -lc 'rvm --default use ruby-3.4.9'
+# Ruby 4.0.4
+RUN bash -lc 'rvm --default use ruby-4.0.4'
 # JRuby 9.4.9.0
 RUN bash -lc 'rvm --default use jruby-9.4.9.0'
 # JRuby 10.0.0.0
@@ -473,20 +466,24 @@ Learn more: [RVM: Setting the default Ruby](https://rvm.io/rubies/default).
 You can run any command with a specific Ruby version by prefixing it with `rvm-exec <IDENTIFIER>`. For example:
 
 ```bash
-$ rvm-exec 3.3.10 ruby -v
-Using /usr/local/rvm/gems/ruby-3.3.10
-ruby 3.3.10 (2025-10-23 revision 343ea05002) [x86_64-linux]
+$ rvm-exec 3.3.11 ruby -v
+Using /usr/local/rvm/gems/ruby-3.3.11
+ruby 3.3.11 (2026-03-26 revision 1f2d15125a) [x86_64-linux]
 
-$ rvm-exec 3.4.8 ruby -v
-Using /usr/local/rvm/gems/ruby-3.4.8
-ruby 3.4.8 (2025-12-17 revision 995b59f666) +PRISM [x86_64-linux]
+$ rvm-exec 3.4.9 ruby -v
+Using /usr/local/rvm/gems/ruby-3.4.9
+ruby 3.4.9 (2026-03-11 revision 76cca827ab) +PRISM [x86_64-linux]
+
+$ rvm-exec 4.0.4 ruby -v
+Using /usr/local/rvm/gems/ruby-4.0.4
+ruby 4.0.4 (2026-05-12 revision b89eb1bcbf) +PRISM [x86_64-linux]
 ```
 
 More examples, but with Bundler instead:
 
 ```bash
-# This runs 'bundle install' using Ruby 3.4.8
-rvm-exec 3.4.8 bundle install
+# This runs 'bundle install' using Ruby 3.4.9
+rvm-exec 3.4.9 bundle install
 ```
 
 <a name="default_ruby_wrapper_scripts"></a>
@@ -840,7 +837,6 @@ Clone this repository:
 
 Build one of the images:
 
-    make build_ruby32
     make build_ruby33
     make build_ruby34
     make build_ruby40
@@ -857,11 +853,11 @@ Build one of the images:
 
 If you want to call the resulting image something else, pass the NAME variable, like this:
 
-     make NAME=joe/passenger build_ruby32
+     make NAME=joe/passenger build_ruby34
 
 Make will build images for both AMD64 and ARM64 by default. If you only want to build for one CPU architecture (ie. AMD64), disable the other architecture like this:
 
-     make BUILD_ARM64=0 build_ruby32
+     make BUILD_ARM64=0 build_ruby34
 
 <a name="faq"></a>
 ## FAQ

@@ -3,7 +3,7 @@ set -e
 source /pd_build/buildconfig
 set -x
 
-VERSION=${1:-22}
+VERSION=${1:-24}
 if ( ! egrep -q nodesource.gpg /etc/apt/sources.list.d/nodesource.list ); then
 	## Install Node.js (also needed for Rails asset compilation)
 
@@ -17,7 +17,7 @@ if ( ! egrep -q nodesource.gpg /etc/apt/sources.list.d/nodesource.list ); then
 	minimal_apt_get_install nodejs
 
 	echo "+ Updating npm"
-	run npm update npm -g || ( cat /root/.npm/_logs/*-debug.log && false )
+	run npm update npm -g || ( cat /root/.npm/_logs/*-debug*.log && false )
 	if [[ ! -e /usr/bin/node ]]; then
 		ln -s /usr/bin/nodejs /usr/bin/node
 	fi
